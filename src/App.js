@@ -58,7 +58,7 @@ export default function App() {
           setIsError("");
         } catch (err) {
           console.error(err.message);
-          if (err.name !== "AbortEError") {
+          if (err.name !== "AbortError") {
             setIsError(err.message);
           }
           // setIsLoading(false);
