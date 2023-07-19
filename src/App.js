@@ -1,15 +1,19 @@
-import { toBeRequired } from "@testing-library/jest-dom/matchers";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarComponent from "./Star";
 const KEY = "4c88865a";
 
 export default function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  // const [watched, setWatched] = useState();
+  const [watched, setWatched] = useState(function () {
+    const ShowingInUI = localStorage.getItem("Watchedmovie");
+    return JSON.parse(ShowingInUI);
+  });
 
   // useEffect(function () {
   //   console.log("after intial render");
@@ -27,17 +31,29 @@ export default function App() {
 
   // console.log("during render");
   function handleClick(id) {
-    return setSelectedId((selectedid) => (id === selectedid ? null : id));
+    setSelectedId((selectedid) => (id === selectedid ? null : id));
   }
   function handleClose() {
-    return setSelectedId(null);
+    setSelectedId(null);
   }
   function handleAddWatchedMovie(movie) {
-    return setWatched((watched) => [...watched, movie]);
+    setWatched((watched) => [...watched, movie]);
+
+    // how to store watched movie in local storage
+    // localStorage.setItem("watched movie", JSON.stringify([...watched, movie]));
+    //JSon.stringify is convert number into string
   }
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
+
+  useEffect(
+    function () {
+      localStorage.setItem("Watchedmovie", JSON.stringify(watched));
+    },
+    [watched]
+  );
+
   useEffect(
     function () {
       const Controller = new AbortController();
@@ -158,6 +174,28 @@ function Logo() {
   );
 }
 function Search({ query, setQuery }) {
+  const refel = useRef(null);
+
+  useEffect(
+    function () {
+      function Callback(e) {
+        if (document.activeElement === refel.current) return;
+        if (e.code === "Enter") {
+          refel.current.focus();
+          setQuery("");
+        }
+      }
+      document.addEventListener("keydown", Callback);
+      return () => document.addEventListener("keydown", Callback);
+    },
+    [setQuery]
+  );
+
+  // useEffect(function () {
+  //   const el = document.querySelector(".search");
+  //   console.log(el);
+  //   el.focus();
+  // }, []);
   return (
     <input
       className="search"
@@ -165,6 +203,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={refel}
     />
   );
 }
@@ -231,6 +270,8 @@ function MovieDetails({
   const [movieRightDetail, setMovieRightDetail] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
+
+  // const [isFalse, setIsFalse] = useState("");
   const {
     Title: title,
     Year: year,
@@ -244,6 +285,28 @@ function MovieDetails({
     Genre: genre,
   } = movieRightDetail;
 
+  // console.log(isFalse);
+  // useEffect(
+  //   function () {
+  //     setIsFalse(imdbRating > 8);
+  //   },
+  //   [imdbRating]
+  // );
+
+  // const isFalse = imdbRating > 8;
+  // console.log(isFalse);
+
+  // const [avgRating, setAvgRating] = useState(0);
+
+  const countclick = useRef(0);
+
+  useEffect(
+    function () {
+      if (userRating) countclick.current = countclick.current + 1;
+    },
+    [userRating]
+  );
+
   function handlewatchedmovie() {
     const WatchMovie = {
       imdbID: selectedId,
@@ -253,9 +316,12 @@ function MovieDetails({
       imdbRating: Number(imdbRating),
       runtime,
       userRating,
+      countclickmovie: countclick.current,
     };
     onHandleAddWatcheMovie(WatchMovie);
     onhandleClose();
+    // setAvgRating(Number(imdbRating));
+    // setAvgRating((avgRating) => (avgRating + userRating) / 2);
   }
   const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
   //includes() method to check if a old word exists in an array
@@ -332,6 +398,7 @@ function MovieDetails({
               </p>
             </div>
           </header>
+          {/* {avgRating} */}
           <section>
             <div className="rating">
               {!isWatched ? (
